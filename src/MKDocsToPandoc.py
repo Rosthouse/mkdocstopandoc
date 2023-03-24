@@ -5,11 +5,12 @@ to_remove = []
 
 
 def prepare(doc: pf.Doc):
-    doc.icon_folder = str(doc.get_metadata('icons-folder', './'))
+    doc.icons_folder = str(doc.get_metadata('icons-folder', './'))
     doc.content_tabs = doc.get_metadata('content-tabs', [])
 
     doc.admonitions = doc.get_metadata('admonitions', False)
     doc.keys = doc.get_metadata('keys', False)
+    doc.figcaptions = doc.get_metadata('figcaptions', False)
 
     pf.debug(doc.content_tabs)
 
@@ -17,6 +18,20 @@ def prepare(doc: pf.Doc):
 def remove(elem: pf.Element, doc: pf.Doc):
     if elem in to_remove:
         return []
+    return elem
+
+
+def fig_captions(elem: pf.Element, doc: pf.Doc) -> pf.Element:
+
+    if not doc.figcaptions:
+        return elem
+
+    if isinstance(elem, pf.RawBlock):
+        rb: pf.RawBlock = elem
+        pf.debug(rb)
+        if rb.text == "<figcaption>" or rb.text == "</figcaption>":
+            to_remove.append(elem)
+            to_remove.append(elem.next)
     return elem
 
 
@@ -59,13 +74,15 @@ def content_tabs(elem: pf.Element, doc: pf.Doc) -> pf.Element:
 
 
 def icons(elem: pf.Element, doc: pf.Doc) -> pf.Element:
+    if not hasattr(doc, "icons_folder"):
+        return elem
+
     if isinstance(elem, pf.Str):
         if elem.text.startswith(":") and elem.text.endswith(":"):
             txt = elem.text
             txt = txt.removeprefix(":")
             txt = txt.removesuffix(":")
-            txt = txt.replace("-", "/") + ".svg"
-            pf.debug("Exchanging {} for {}".format(elem.text, txt))
+            txt = doc.icons_folder + "/" + txt.replace("-", "/") + ".svg"
             return pf.Image(url=txt, title="ICON {} NOT FOUND".format(txt))
 
     return elem
@@ -91,7 +108,7 @@ def admonitions(elem: pf.Element, doc: pf.Doc) -> pf.Element:
 
 
 def main(doc: pf.Doc = None):
-    return pf.run_filters([shortcuts, icons, admonitions, content_tabs, remove], prepare=prepare)
+    return pf.run_filters([shortcuts, icons, admonitions, content_tabs, fig_captions, remove], prepare=prepare)
 
 
 if __name__ == "__main__":
