@@ -6,9 +6,12 @@ to_remove = []
 
 def prepare(doc: pf.Doc):
     doc.icon_folder = str(doc.get_metadata('icons-folder', './'))
-    doc.scripting_language = str(
-        doc.get_metadata('scripting-language', 'GDScript')
-    )
+    doc.content_tabs = doc.get_metadata('content-tabs', [])
+
+    doc.admonitions = doc.get_metadata('admonitions', False)
+    doc.keys = doc.get_metadata('keys', False)
+
+    pf.debug(doc.content_tabs)
 
 
 def remove(elem: pf.Element, doc: pf.Doc):
@@ -18,6 +21,10 @@ def remove(elem: pf.Element, doc: pf.Doc):
 
 
 def shortcuts(elem: pf.Element, doc: pf.Doc) -> pf.Element:
+
+    if not doc.keys:
+        return elem
+
     if isinstance(elem, pf.Str):
         if elem.text.startswith("++") and elem.text.endswith("++"):
             txt = elem.text
@@ -28,11 +35,15 @@ def shortcuts(elem: pf.Element, doc: pf.Doc) -> pf.Element:
     return elem
 
 
-def code_tabs(elem: pf.Element, doc: pf.Doc) -> pf.Element:
+def content_tabs(elem: pf.Element, doc: pf.Doc) -> pf.Element:
+
+    if not hasattr(doc, 'content_tabs'):
+        return elem
+
     if isinstance(elem, pf.Para) and pf.stringify(elem).startswith("==="):
         # pf.debug(elem)
         type = elem.content[2].content[0].text
-        if type == doc.scripting_language and isinstance(elem.next, pf.CodeBlock):
+        if type in doc.content_tabs and isinstance(elem.next, pf.CodeBlock):
             conv = pf.convert_text(elem.next.text)
 
             new_elem = pf.BlockQuote(
@@ -43,18 +54,7 @@ def code_tabs(elem: pf.Element, doc: pf.Doc) -> pf.Element:
         else:
             to_remove.append(elem.next)
             return []
-        # txt: str = elem.content[2].text
-        # if txt == "C#":
-        #     # if isinstance(elem.next, pf.CodeBlock):
-        #     conv = pf.convert_text(elem.next.text)
-        #     new_elem = pf.BlockQuote(
-        #         pf.Para(
-        #             pf.Strong(pf.Str(elem.content[2].text.capitalize()))
-        #         ),
-        #         *conv
-        #     )
-        #     to_remove.append(elem.next)
-        #     return new_elem
+
     return elem
 
 
@@ -71,7 +71,11 @@ def icons(elem: pf.Element, doc: pf.Doc) -> pf.Element:
     return elem
 
 
-def admonition(elem: pf.Element, doc: pf.Doc) -> pf.Element:
+def admonitions(elem: pf.Element, doc: pf.Doc) -> pf.Element:
+
+    if doc.admonitions == False:
+        return elem
+
     if isinstance(elem, pf.Para) and pf.stringify(elem).startswith("!!!"):
         if isinstance(elem.next, pf.CodeBlock):
             conv = pf.convert_text(elem.next.text)
@@ -86,8 +90,8 @@ def admonition(elem: pf.Element, doc: pf.Doc) -> pf.Element:
     return elem
 
 
-def main(doc=None):
-    return pf.run_filters([shortcuts, icons, admonition, code_tabs, remove], prepare=prepare)
+def main(doc: pf.Doc = None):
+    return pf.run_filters([shortcuts, icons, admonitions, content_tabs, remove], prepare=prepare)
 
 
 if __name__ == "__main__":

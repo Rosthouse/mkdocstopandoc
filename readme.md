@@ -7,10 +7,12 @@ This provides several filters:
   Add this to your metadata:
 
   ```yaml
-  content-tabs: [""]
+  content-tabs:
+    - Tab1
+    - Tab2
   ```
 
-  Each of the listed content tabs will be rendered in the final output, in sequence.
+  Each of the listed content tabs will be rendered in the final output, in sequence. If a tab is missing, it will not be rendered.
 
 - [Admonitions](https://squidfunk.github.io/mkdocs-material/reference/admonitions/)
 
@@ -19,3 +21,7 @@ This provides several filters:
 - [Icons](https://squidfunk.github.io/mkdocs-material/reference/icons-emojis/)
 
   Converts icons to inline images
+
+- [Keys](https://facelessuser.github.io/pymdown-extensions/extensions/keys/)
+
+  Keys will be converted to simple text.
